@@ -42,8 +42,12 @@
                 <span>{{ msg.user }}</span
                 >{{ msg.time }}
                 <div class="chat-text">
-                  <span class="auto-enter">{{ msg.content }}</span>
+                  <span class="auto-enter">
+                    <div v-highlight v-html="msg.md_content" />
+                  </span>
                 </div>
+                <!-- <span class="auto-enter">{{ msg.content }}</span>
+                </div> -->
               </div>
             </div>
           </li>
@@ -100,6 +104,9 @@
 </template>
 
 <script lang="ts">
+import { marked } from "marked";
+// import "github-markdown-css";
+import hljs from "highlight.js";
 import { defineComponent, watch, ref, reactive, nextTick } from "vue";
 // import { DownOutlined } from "@ant-design/icons-vue";
 import {
@@ -113,38 +120,9 @@ import {
 } from "ant-design-vue";
 import { format } from "@/utils/date-utils";
 import { setScrollTop } from "@/utils/dom";
-// import { chatgptService } from "@/api/chatgpt";
 import { useAsyncLoading } from "@/utils/async";
 import axios from "axios";
 
-// function makeRequest(url: string, data: string): Promise<string> {
-//   return new Promise(function (resolve, reject) {
-//     let xhr = new XMLHttpRequest();
-//     xhr.open("POST", url, true);
-//     xhr.setRequestHeader("Content-Type", "application/json");
-//     // xhr.setRequestHeader(
-//     //   "Authorization",
-//     //   "Bearer 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"
-//     // );
-//     xhr.onreadystatechange = function () {
-//       if (this.status === 200 && this.readyState === 4) {
-//         resolve(xhr.responseText);
-//       } else {
-//         reject({
-//           status: this.status,
-//           statusText: xhr.statusText,
-//         });
-//       }
-//     };
-//     xhr.onerror = function () {
-//       reject({
-//         status: this.status,
-//         statusText: xhr.statusText,
-//       });
-//     };
-//     xhr.send(data);
-//   });
-// }
 export default defineComponent({
   components: {
     [Dropdown.name]: Dropdown,
@@ -159,28 +137,33 @@ export default defineComponent({
     [Card.name]: Card,
   },
   setup() {
-    // const session = ref({
-    //   prompt: "",
-    // });
+    marked.setOptions({
+      renderer: new marked.Renderer(),
+      highlight: function (code: string, lang: string) {
+        const language = hljs.getLanguage(lang) ? lang : "plaintext";
+        return hljs.highlight(code, { language }).value;
+      },
+      langPrefix: "hljs language-",
+      pedantic: false,
+      gfm: true,
+      breaks: true,
+      sanitize: false,
+      smartLists: true,
+      smartypants: false,
+      xhtml: false,
+    });
     const msgList = ref([
       {
         time: format(new Date(), "HH:mm:ss"),
         user: "Chat AI",
-        content:
-          "当前使用的模型是text-davinci-001, 模型温度为0.6, 最大存储近4次对话",
+        content: "你好! 我是一个AI机器人",
+        md_content: marked.parse(
+          "你好! 我是一个基于OPENAI的机器人，已开源：[源码](https://github.com/huanghaozi/chatbot)"
+        ),
         type: "others",
         customClass: "others",
       },
     ]);
-
-    // msgList.value.push({
-    //   time: format(new Date(), "HH:mm:ss"),
-    //   user: "Chat AI",
-    //   content:
-    //     "您输入的内容及产生的对话必须遵守中华人民共和国相关法律法规，否则后果自负！",
-    //   type: "others",
-    //   customClass: "others",
-    // });
 
     const chatForm = reactive({
       chatContent: "",
@@ -233,13 +216,14 @@ export default defineComponent({
         time: format(new Date(), "HH:mm:ss"),
         user: "我说",
         content: chatForm.chatContent,
+        md_content: "",
         type: "mine",
         customClass: "mine",
       });
       // 调用 AI 接口
-      const es = new EventSource(
-        `https://gptapi.huanghaozi.cn/chat?wd=${chatForm.chatContent}`
-      );
+      const es = new EventSource(`./chat?wd=${chatForm.chatContent}`, {
+        withCredentials: true,
+      });
 
       let content = "";
 
@@ -272,6 +256,7 @@ export default defineComponent({
               time: format(new Date(), "HH:mm:ss"),
               user: "Chat AI",
               content: text,
+              md_content: marked.parse(text),
               type: "others",
               customClass: "others",
             });
@@ -279,15 +264,12 @@ export default defineComponent({
           } else {
             // 拼接后面的数据
             content += text;
-            console.log(
-              JSON.stringify({
-                data: content,
-              })
-            );
             content = content.replace(/([\r]*?\n)+/g, "\n");
             content = content.replace(/\t/g, "    ");
-            content = content.replace(/^\s+|\s+$/g, "");
+            // content = content.replace(/^\s+|\s+$/g, "");
             msgList.value[msgList.value.length - 1].content = content;
+            msgList.value[msgList.value.length - 1].md_content =
+              marked.parse(content);
           }
         }
       };
@@ -296,48 +278,6 @@ export default defineComponent({
         chatFormRef.value.resetFields();
       };
     };
-
-    // const sendChatContent = async () => {
-    //   msgList.value.push({
-    //     time: format(new Date(), "HH:mm:ss"),
-    //     user: "我说",
-    //     content: chatForm.chatContent,
-    //     type: "mine",
-    //     customClass: "mine",
-    //   });
-    //   loading.value = true;
-    //   try {
-    //     const url = "https://gptapi.huanghaozi.cn";
-    //     // const url = "https://api.openai.com/v1/completions";
-    //     const data = JSON.stringify({
-    //       model: "text-chat-davinci-002-20221122",
-    //       prompt: `${session.value.prompt + `\nU:`}${
-    //         chatForm.chatContent
-    //       }\nAI:`,
-    //       temperature: 0.5,
-    //       max_tokens: 2048,
-    //       top_p: 1,
-    //       frequency_penalty: 0,
-    //       presence_penalty: 0,
-    //       stop: ["\nU:", "\nAI:"],
-    //     });
-    //     const result = await makeRequest(url, data);
-    //     // const { result } = await axios.post({
-    //     //   wd: chatForm.chatContent,
-    //     // });
-    //     console.log(result);
-    //     msgList.value.push({
-    //       time: format(new Date(), "HH:mm:ss"),
-    //       user: "Chat AI",
-    //       content: JSON.parse(result).choices[0].text,
-    //       type: "others",
-    //       customClass: "others",
-    //     });
-    //   } finally {
-    //     loading.value = false;
-    //     chatFormRef.value.resetFields();
-    //   }
-    // };
 
     const onKeydownChat = (e: {
       keyCode: number;
@@ -362,12 +302,13 @@ export default defineComponent({
       // session.value.prompt = "";
       // await chatgptService.changeTopic();
       try {
-        await axios.get("https://gptapi.huanghaozi.cn/change");
+        await axios.get("./change");
         msgList.value = [
           {
             time: format(new Date(), "HH:mm:ss"),
             user: "Chat AI",
             content: "好的，你想聊什么新的话题？",
+            md_content: marked.parse("好的，你想聊什么新的话题？"),
             type: "others",
             customClass: "others",
           },
@@ -397,8 +338,7 @@ export default defineComponent({
   },
 });
 </script>
-
-<style lang="scss">
+<style lang="scss" scoped>
 .btn-change {
   border-color: white !important;
   color: white !important;
@@ -414,30 +354,9 @@ export default defineComponent({
   display: inline-block;
   width: 100%;
   word-break: break-all;
-  white-space: pre-wrap;
+  white-space: normal;
   width: fit-content;
 }
-.card-chat {
-  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);
-
-  .ant-card-head {
-    background: #5352ed;
-  }
-
-  .ant-card-head-title {
-    display: flex;
-    align-items: center;
-    white-space: normal;
-    > span {
-      flex: 1;
-    }
-  }
-
-  .ant-card-body {
-    padding: 10px;
-  }
-}
-
 .msg-box {
   position: relative;
   list-style-type: none;
@@ -738,6 +657,121 @@ export default defineComponent({
 @media screen and (min-width: 768px) {
   .dropdown-send {
     display: inline-block;
+  }
+}
+</style>
+
+<style>
+p {
+  margin-bottom: 0 !important;
+}
+table {
+  margin: 3px;
+}
+/* Table Head */
+thead th {
+  background-color: rgb(81, 130, 187);
+  color: #fff;
+  border-bottom-width: 0;
+}
+
+/* Column Style */
+td {
+  color: #000;
+}
+/* Heading and Column Style */
+tr,
+th {
+  border-width: 1px;
+  border-style: solid;
+  border-color: rgb(81, 130, 187);
+}
+
+/* Padding and font style */
+td,
+th {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: Verdana;
+  font-weight: bold;
+}
+pre {
+  position: relative;
+}
+pre code {
+  font-family: "Consolas", "Courier New", monospace, sans-serif !important;
+}
+.hljsln {
+  display: block;
+  margin-left: 2.4em;
+  padding-left: 0.7em !important;
+}
+.hljsln::-webkit-scrollbar {
+  height: 15px;
+}
+.hljsln::-webkit-scrollbar-thumb {
+  background: #666;
+}
+.hljsln::-webkit-scrollbar-thumb:hover {
+  background: #797979;
+}
+.hljsln::-webkit-scrollbar-thumb:active {
+  background: #949494;
+}
+.hljsln .ln-bg {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  width: 2.4em;
+  height: 100%;
+  background: #333;
+}
+.hljsln .ln-num {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  width: 2.4em;
+  height: 1em;
+  text-align: center;
+  display: inline-block;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.hljsln .ln-num::before {
+  color: #777;
+  font-style: normal;
+  font-weight: normal;
+  content: attr(data-num);
+}
+.hljsln .ln-eof {
+  display: inline-block;
+}
+</style>
+
+<style lang="scss">
+.card-chat {
+  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);
+
+  .ant-card-head {
+    background: #5352ed;
+  }
+
+  .ant-card-head-title {
+    display: flex;
+    align-items: center;
+    white-space: normal;
+    > span {
+      flex: 1;
+    }
+  }
+
+  .ant-card-body {
+    padding: 10px;
   }
 }
 </style>
