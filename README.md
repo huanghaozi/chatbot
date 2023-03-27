@@ -54,6 +54,10 @@ Please create a configure file whose content is like below (Please replace the {
 
 请创建一个配置文件，内容如下(请将{带花括号内容}根据您的环境替换掉)，路径参考`/etc/systemd/system/chatbot-backend.service`
 
+**Attention: Please modify the code to generate secret_key randomly to fixed cause that different worker might use different key if randomly**
+
+**请注意: 由于worker运行在不同进程上，随机生成key可能导致会话无法保持，请将后端代码中随机生成key的代码`app.config['SECRET_KEY'] = os.urandom(24)`替换为自定义key**
+
 ```config
 [Unit]
 Description=Gunicorn instance to serve chatbot backend
