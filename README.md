@@ -1,7 +1,7 @@
 # Chatbot
-A web application based on OpenAI API with streamed message communication. [Demo](https://gpt.huanghaozi.cn)
+A web application based on OpenAI API with streamed message communication, Markdown and Latex rendering support. [Demo](https://gpt.huanghaozi.cn)
 
-一个基于OpenAI API的Web聊天机器人，带流式消息传输。[Demo](https://gpt.huanghaozi.cn)
+一个基于OpenAI API的Web聊天机器人，使用流式消息传输，支持Markdown渲染、Latex渲染。[Demo](https://gpt.huanghaozi.cn)
 
 ![](https://cdn.jsdelivr.net/gh/huanghaozi/chatbot@main/demo.jpg)
 
@@ -53,6 +53,10 @@ python main.py
 Please create a configure file whose content is like below (Please replace the {content} depend on your environment), a reference for its path is `/etc/systemd/system/chatbot-backend.service`, 
 
 请创建一个配置文件，内容如下(请将{带花括号内容}根据您的环境替换掉)，路径参考`/etc/systemd/system/chatbot-backend.service`
+
+**Attention: Please modify the code to generate secret_key randomly to fixed cause that different worker might use different key if randomly**
+
+**请注意: 由于worker运行在不同进程上，随机生成key可能导致会话无法保持，请将后端代码中随机生成key的代码`app.config['SECRET_KEY'] = os.urandom(24)`替换为自定义key**
 
 ```config
 [Unit]
