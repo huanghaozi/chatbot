@@ -1,7 +1,7 @@
 # Chatbot
-A web application based on OpenAI API with streamed message communication. [Demo](https://gpt.huanghaozi.cn)
+A web application based on OpenAI API with streamed message communication, Markdown and Latex rendering support. [Demo](https://gpt.huanghaozi.cn)
 
-一个基于OpenAI API的Web聊天机器人，使用流式消息传输，支持Markdown渲染。[Demo](https://gpt.huanghaozi.cn)
+一个基于OpenAI API的Web聊天机器人，使用流式消息传输，支持Markdown渲染、Latex渲染。[Demo](https://gpt.huanghaozi.cn)
 
 ![](https://cdn.jsdelivr.net/gh/huanghaozi/chatbot@main/demo.jpg)
 
