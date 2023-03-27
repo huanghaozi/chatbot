@@ -3,7 +3,7 @@
     <section class="chat-room">
       <a-card class="card-chat" hoverable>
         <template #title>
-          <span style="color: white">ChatGPT</span>
+          <span style="color: white">ChatBot</span>
           <a-button
             class="btn-normal btn-change"
             style="margin-left: 20px"
@@ -104,10 +104,22 @@
 </template>
 
 <script lang="ts">
+declare global {
+  interface Window {
+    MathJax: any;
+  }
+}
 import { marked } from "marked";
 // import "github-markdown-css";
 import hljs from "highlight.js";
-import { defineComponent, watch, ref, reactive, nextTick } from "vue";
+import {
+  defineComponent,
+  watch,
+  ref,
+  reactive,
+  nextTick,
+  onMounted,
+} from "vue";
 // import { DownOutlined } from "@ant-design/icons-vue";
 import {
   Card,
@@ -122,6 +134,7 @@ import { format } from "@/utils/date-utils";
 import { setScrollTop } from "@/utils/dom";
 import { useAsyncLoading } from "@/utils/async";
 import axios from "axios";
+import { any } from "vue-types";
 
 export default defineComponent({
   components: {
@@ -164,6 +177,24 @@ export default defineComponent({
         customClass: "others",
       },
     ]);
+
+    const TypeSet = async function () {
+      if (!window.MathJax) {
+        return;
+      }
+      window.MathJax.startup.promise = window.MathJax.startup.promise
+        .then(() => {
+          return window.MathJax.typesetPromise();
+        })
+        .catch((err: { message: string }) =>
+          console.log("Typeset failed: " + err.message)
+        );
+      return window.MathJax.startup.promise;
+    };
+
+    onMounted(() => {
+      TypeSet();
+    });
 
     const chatForm = reactive({
       chatContent: "",
@@ -260,6 +291,7 @@ export default defineComponent({
               type: "others",
               customClass: "others",
             });
+            TypeSet();
             content += text;
           } else {
             // 拼接后面的数据
@@ -270,6 +302,7 @@ export default defineComponent({
             msgList.value[msgList.value.length - 1].content = content;
             msgList.value[msgList.value.length - 1].md_content =
               marked.parse(content);
+            TypeSet();
           }
         }
       };
@@ -359,6 +392,7 @@ export default defineComponent({
 }
 .msg-box {
   position: relative;
+  flex-grow: 1;
   list-style-type: none;
   padding: 12px 18px;
   // min-height: 400px;
@@ -510,6 +544,9 @@ export default defineComponent({
   }
 }
 .card-chat {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);
 
   .ant-card-head {
@@ -771,6 +808,9 @@ pre code {
   }
 
   .ant-card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
     padding: 10px;
   }
 }

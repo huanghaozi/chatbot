@@ -26,7 +26,6 @@ function addLineNumbersForCode(html: string) {
 const app = createApp(App);
 app.directive("highlight", function (el) {
   console.log("自定义指令", el);
-
   const elements = el.querySelectorAll("pre code");
   for (let i = 0; i < elements.length; i++) {
     if (elements[i].className.indexOf("hljsln") == -1) {
@@ -36,7 +35,6 @@ app.directive("highlight", function (el) {
       elements[i].className += " hljsln";
     }
   }
-  console.log(elements);
 });
 app.use(hljs.vuePlugin);
 app.use(Antd);
